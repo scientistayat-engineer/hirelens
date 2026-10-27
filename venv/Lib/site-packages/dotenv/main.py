@@ -2,38 +2,31 @@ import io
 import logging
 import os
 import pathlib
-import stat
+import shutil
 import sys
 import tempfile
 from collections import OrderedDict
 from contextlib import contextmanager
-from typing import IO, Dict, Iterable, Iterator, Mapping, Optional, Tuple, Union
+from typing import (IO, Dict, Iterable, Iterator, Mapping, Optional, Tuple,
+                    Union)
 
 from .parser import Binding, parse_stream
 from .variables import parse_variables
 
 # A type alias for a string path to be used for the paths in this file.
-# These paths may flow to `open()` and `os.replace()`.
-StrPath = Union[str, "os.PathLike[str]"]
+# These paths may flow to `open()` and `shutil.move()`; `shutil.move()`
+# only accepts string paths, not byte paths or file descriptors. See
+# https://github.com/python/typeshed/pull/6832.
+StrPath = Union[str, 'os.PathLike[str]']
 
 logger = logging.getLogger(__name__)
-
-
-def _load_dotenv_disabled() -> bool:
-    """
-    Determine if dotenv loading has been disabled.
-    """
-    if "PYTHON_DOTENV_DISABLED" not in os.environ:
-        return False
-    value = os.environ["PYTHON_DOTENV_DISABLED"].casefold()
-    return value in {"1", "true", "t", "yes", "y"}
 
 
 def with_warn_for_invalid_lines(mappings: Iterator[Binding]) -> Iterator[Binding]:
     for mapping in mappings:
         if mapping.error:
             logger.warning(
-                "python-dotenv could not parse statement starting at line %s",
+                "Python-dotenv could not parse statement starting at line %s",
                 mapping.original.line,
             )
         yield mapping
@@ -59,7 +52,7 @@ class DotEnv:
 
     @contextmanager
     def _get_stream(self) -> Iterator[IO[str]]:
-        if self.dotenv_path and _is_file_or_fifo(self.dotenv_path):
+        if self.dotenv_path and os.path.isfile(self.dotenv_path):
             with open(self.dotenv_path, encoding=self.encoding) as stream:
                 yield stream
         elif self.stream is not None:
@@ -67,22 +60,20 @@ class DotEnv:
         else:
             if self.verbose:
                 logger.info(
-                    "python-dotenv could not find configuration file %s.",
-                    self.dotenv_path or ".env",
+                    "Python-dotenv could not find configuration file %s.",
+                    self.dotenv_path or '.env',
                 )
-            yield io.StringIO("")
+            yield io.StringIO('')
 
     def dict(self) -> Dict[str, Optional[str]]:
         """Return dotenv as dict"""
-        if self._dict is not None:
+        if self._dict:
             return self._dict
 
         raw_values = self.parse()
 
         if self.interpolate:
-            self._dict = OrderedDict(
-                resolve_variables(raw_values, override=self.override)
-            )
+            self._dict = OrderedDict(resolve_variables(raw_values, override=self.override))
         else:
             self._dict = OrderedDict(raw_values)
 
@@ -110,7 +101,8 @@ class DotEnv:
         return True
 
     def get(self, key: str) -> Optional[str]:
-        """ """
+        """
+        """
         data = self.dict()
 
         if key in data:
@@ -139,54 +131,21 @@ def get_key(
 def rewrite(
     path: StrPath,
     encoding: Optional[str],
-    follow_symlinks: bool = False,
 ) -> Iterator[Tuple[IO[str], IO[str]]]:
-    if follow_symlinks:
-        path = os.path.realpath(path)
+    pathlib.Path(path).touch()
 
-    try:
-        source: IO[str] = open(path, encoding=encoding)
-        try:
-            path_stat = os.lstat(path)
-            original_mode: Optional[int] = (
-                stat.S_IMODE(path_stat.st_mode)
-                if stat.S_ISREG(path_stat.st_mode)
-                else None
-            )
-        except BaseException:
-            source.close()
-            raise
-    except FileNotFoundError:
-        source = io.StringIO("")
-        original_mode = None
-
-    with tempfile.NamedTemporaryFile(
-        mode="w",
-        encoding=encoding,
-        delete=False,
-        prefix=".tmp_",
-        dir=os.path.dirname(os.path.abspath(path)),
-    ) as dest:
-        dest_path = pathlib.Path(dest.name)
+    with tempfile.NamedTemporaryFile(mode="w", encoding=encoding, delete=False) as dest:
         error = None
-
         try:
-            with source:
+            with open(path, encoding=encoding) as source:
                 yield (source, dest)
         except BaseException as err:
             error = err
 
     if error is None:
-        try:
-            if original_mode is not None:
-                os.chmod(dest_path, original_mode)
-
-            os.replace(dest_path, path)
-        except BaseException:
-            dest_path.unlink(missing_ok=True)
-            raise
+        shutil.move(dest.name, path)
     else:
-        dest_path.unlink(missing_ok=True)
+        os.unlink(dest.name)
         raise error from None
 
 
@@ -197,42 +156,31 @@ def set_key(
     quote_mode: str = "always",
     export: bool = False,
     encoding: Optional[str] = "utf-8",
-    follow_symlinks: bool = False,
 ) -> Tuple[Optional[bool], str, str]:
     """
     Adds or Updates a key/value to the given .env
 
-    The target .env file is created if it doesn't exist.
-
-    This function doesn't follow symlinks by default, to avoid accidentally
-    modifying a file at a potentially untrusted path. If you don't need this
-    protection and need symlinks to be followed, use `follow_symlinks`.
+    If the .env path given doesn't exist, fails instead of risking creating
+    an orphan .env somewhere in the filesystem
     """
     if quote_mode not in ("always", "auto", "never"):
         raise ValueError(f"Unknown quote_mode: {quote_mode}")
 
-    quote = quote_mode == "always" or (
-        quote_mode == "auto" and not value_to_set.isalnum()
+    quote = (
+        quote_mode == "always"
+        or (quote_mode == "auto" and not value_to_set.isalnum())
     )
 
     if quote:
-        # The single-quoted-value parser decodes `\\` and `\'`, so both have to
-        # be escaped here for the value to survive a write/read round-trip.
-        # Backslashes first, otherwise the backslash added by the quote
-        # escaping would be escaped in turn.
-        escaped = value_to_set.replace("\\", "\\\\").replace("'", "\\'")
-        value_out = f"'{escaped}'"
+        value_out = "'{}'".format(value_to_set.replace("'", "\\'"))
     else:
         value_out = value_to_set
     if export:
-        line_out = f"export {key_to_set}={value_out}\n"
+        line_out = f'export {key_to_set}={value_out}\n'
     else:
         line_out = f"{key_to_set}={value_out}\n"
 
-    with rewrite(dotenv_path, encoding=encoding, follow_symlinks=follow_symlinks) as (
-        source,
-        dest,
-    ):
+    with rewrite(dotenv_path, encoding=encoding) as (source, dest):
         replaced = False
         missing_newline = False
         for mapping in with_warn_for_invalid_lines(parse_stream(source)):
@@ -255,27 +203,19 @@ def unset_key(
     key_to_unset: str,
     quote_mode: str = "always",
     encoding: Optional[str] = "utf-8",
-    follow_symlinks: bool = False,
 ) -> Tuple[Optional[bool], str]:
     """
     Removes a given key from the given `.env` file.
 
     If the .env path given doesn't exist, fails.
     If the given key doesn't exist in the .env, fails.
-
-    This function doesn't follow symlinks by default, to avoid accidentally
-    modifying a file at a potentially untrusted path. If you don't need this
-    protection and need symlinks to be followed, use `follow_symlinks`.
     """
     if not os.path.exists(dotenv_path):
         logger.warning("Can't delete from %s - it doesn't exist.", dotenv_path)
         return None, key_to_unset
 
     removed = False
-    with rewrite(dotenv_path, encoding=encoding, follow_symlinks=follow_symlinks) as (
-        source,
-        dest,
-    ):
+    with rewrite(dotenv_path, encoding=encoding) as (source, dest):
         for mapping in with_warn_for_invalid_lines(parse_stream(source)):
             if mapping.key == key_to_unset:
                 removed = True
@@ -283,9 +223,7 @@ def unset_key(
                 dest.write(mapping.original.string)
 
     if not removed:
-        logger.warning(
-            "Key %s not removed from %s - key doesn't exist.", key_to_unset, dotenv_path
-        )
+        logger.warning("Key %s not removed from %s - key doesn't exist.", key_to_unset, dotenv_path)
         return None, key_to_unset
 
     return removed, key_to_unset
@@ -297,7 +235,7 @@ def resolve_variables(
 ) -> Mapping[str, Optional[str]]:
     new_values: Dict[str, Optional[str]] = {}
 
-    for name, value in values:
+    for (name, value) in values:
         if value is None:
             result = None
         else:
@@ -321,7 +259,7 @@ def _walk_to_root(path: str) -> Iterator[str]:
     Yield directories starting from the given directory up to the root
     """
     if not os.path.exists(path):
-        raise IOError("Starting path not found")
+        raise IOError('Starting path not found')
 
     if os.path.isfile(path):
         path = os.path.dirname(path)
@@ -335,7 +273,7 @@ def _walk_to_root(path: str) -> Iterator[str]:
 
 
 def find_dotenv(
-    filename: str = ".env",
+    filename: str = '.env',
     raise_error_if_not_found: bool = False,
     usecwd: bool = False,
 ) -> str:
@@ -346,19 +284,14 @@ def find_dotenv(
     """
 
     def _is_interactive():
-        """Decide whether this is running in a REPL or IPython notebook"""
-        if hasattr(sys, "ps1") or hasattr(sys, "ps2"):
-            return True
+        """ Decide whether this is running in a REPL or IPython notebook """
         try:
-            main = __import__("__main__", None, None, fromlist=["__file__"])
+            main = __import__('__main__', None, None, fromlist=['__file__'])
         except ModuleNotFoundError:
             return False
-        return not hasattr(main, "__file__")
+        return not hasattr(main, '__file__')
 
-    def _is_debugger():
-        return sys.gettrace() is not None
-
-    if usecwd or _is_interactive() or _is_debugger() or getattr(sys, "frozen", False):
+    if usecwd or _is_interactive() or getattr(sys, 'frozen', False):
         # Should work without __file__, e.g. in REPL or IPython notebook.
         path = os.getcwd()
     else:
@@ -376,13 +309,13 @@ def find_dotenv(
 
     for dirname in _walk_to_root(path):
         check_path = os.path.join(dirname, filename)
-        if _is_file_or_fifo(check_path):
+        if os.path.isfile(check_path):
             return check_path
 
     if raise_error_if_not_found:
-        raise IOError("File not found")
+        raise IOError('File not found')
 
-    return ""
+    return ''
 
 
 def load_dotenv(
@@ -402,25 +335,13 @@ def load_dotenv(
         verbose: Whether to output a warning the .env file is missing.
         override: Whether to override the system environment variables with the variables
             from the `.env` file.
-        interpolate: Whether to interpolate variables using POSIX variable expansion.
         encoding: Encoding to be used to read the file.
     Returns:
         Bool: True if at least one environment variable is set else False
 
     If both `dotenv_path` and `stream` are `None`, `find_dotenv()` is used to find the
-    .env file with its default parameters. If you need to change the default parameters
-    of `find_dotenv()`, you can explicitly call `find_dotenv()` and pass the result
-    to this function as `dotenv_path`.
-
-    If the environment variable `PYTHON_DOTENV_DISABLED` is set to a truthy value,
-    .env loading is disabled.
+    .env file.
     """
-    if _load_dotenv_disabled():
-        logger.debug(
-            "python-dotenv: .env loading disabled by PYTHON_DOTENV_DISABLED environment variable"
-        )
-        return False
-
     if dotenv_path is None and stream is None:
         dotenv_path = find_dotenv()
 
@@ -453,7 +374,6 @@ def dotenv_values(
         dotenv_path: Absolute or relative path to the .env file.
         stream: `StringIO` object with .env content, used if `dotenv_path` is `None`.
         verbose: Whether to output a warning if the .env file is missing.
-        interpolate: Whether to interpolate variables using POSIX variable expansion.
         encoding: Encoding to be used to read the file.
 
     If both `dotenv_path` and `stream` are `None`, `find_dotenv()` is used to find the
@@ -470,18 +390,3 @@ def dotenv_values(
         override=True,
         encoding=encoding,
     ).dict()
-
-
-def _is_file_or_fifo(path: StrPath) -> bool:
-    """
-    Return True if `path` exists and is either a regular file or a FIFO.
-    """
-    if os.path.isfile(path):
-        return True
-
-    try:
-        st = os.stat(path)
-    except (FileNotFoundError, OSError):
-        return False
-
-    return stat.S_ISFIFO(st.st_mode)
