@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HireLens: job description to hiring report</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+
+<!-- LOGIN -->
+<section id="login" class="screen">
+  <div class="login-grid">
+    <div class="login-art">
+      <div class="brand"><span class="logo">H</span> HireLens</div>
+      <h1>Read the posting.<br>Get the hiring report.</h1>
+      <p class="muted">Four LangGraph nodes work in sequence, each one handing its result to the next.</p>
+      <div class="flow" id="flow">
+        <div class="fnode" style="--i:0">Extract</div>
+        <div class="fnode" style="--i:1">Classify</div>
+        <div class="fnode" style="--i:2">Analyse skills</div>
+        <div class="fnode" style="--i:3">Report</div>
+      </div>
+    </div>
+    <form class="card login-card" id="authForm">
+      <h2 id="authTitle">Sign in</h2>
+      <label>Email<input type="email" id="email" autocomplete="email" required placeholder="you@example.com"></label>
+      <label>Password<input type="password" id="password" autocomplete="current-password" required minlength="6" placeholder="At least 6 characters"></label>
+      <p class="error" id="authError" role="alert"></p>
+      <button class="btn primary" type="submit" id="authSubmit">Sign in</button>
+      <button class="btn" type="button" id="googleBtn">Continue with Google</button>
+      <button class="link" type="button" id="toggleAuth">No account yet? Create one</button>
+      <button class="link" type="button" id="guestBtn">Try without an account</button>
+    </form>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="app" class="screen hidden">
+  <header class="topbar">
+    <div class="brand"><span class="logo">H</span> HireLens</div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-tab="analyze">Analyze</button>
+      <button class="tab" data-tab="match">Resume match</button>
+      <button class="tab" data-tab="compare">Compare</button>
+      <button class="tab" data-tab="history">History</button>
+    </nav>
+    <div class="user"><span id="userLabel"></span><button class="btn small" id="logoutBtn">Sign out</button></div>
+  </header>
+
+  <main class="wrap">
+    <!-- Analyze -->
+    <div class="pane" id="pane-analyze">
+      <h1 class="hero">Turn any job description into a hiring report.</h1>
+      <div class="cols">
+        <div class="card">
+          <h3>Job description</h3>
+          <textarea id="jd" rows="9" placeholder="Paste a job posting here"></textarea>
+          <div class="row">
+            <button class="btn primary" id="runBtn">Run analysis</button>
+            <button class="btn" id="sampleBtn">Use sample</button>
+            <button class="btn" id="clearBtn">Clear</button>
+          </div>
+          <p class="error" id="jdError" role="alert"></p>
+          <ol class="steps" id="steps">
+            <li data-s="0"><i></i>Information extraction</li>
+            <li data-s="1"><i></i>Job classification</li>
+            <li data-s="2"><i></i>Skill analysis</li>
+            <li data-s="3"><i></i>Hiring report</li>
+          </ol>
+        </div>
+        <div class="card" id="report">
+          <div class="empty" id="reportEmpty">Your report appears here after you run an analysis.</div>
+          <div id="reportBody" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match -->
+    <div class="pane hidden" id="pane-match">
+      <h1 class="hero">How well does a resume fit this job?</h1>
+      <div class="cols">
+        <div class="card">
+          <h3>Resume text</h3>
+          <textarea id="cv" rows="10" placeholder="Paste your resume text"></textarea>
+          <p class="muted small">Uses the job description from the Analyze tab.</p>
+          <button class="btn primary" id="matchBtn">Check match</button>
+          <p class="error" id="cvError" role="alert"></p>
+        </div>
+        <div class="card" id="matchOut"><div class="empty">The match score appears here.</div></div>
+      </div>
+    </div>
+
+    <!-- Compare -->
+    <div class="pane hidden" id="pane-compare">
+      <h1 class="hero">Compare two job descriptions.</h1>
+      <div class="cols">
+        <div class="card"><h3>Job A</h3><textarea id="jdA" rows="6" placeholder="Paste the first job description"></textarea></div>
+        <div class="card"><h3>Job B</h3><textarea id="jdB" rows="6" placeholder="Paste the second job description"></textarea></div>
+      </div>
+      <div class="row"><button class="btn primary" id="cmpBtn">Compare jobs</button></div>
+      <p class="error" id="cmpError" role="alert"></p>
+      <div class="card" id="cmpOut"><div class="empty">The side-by-side comparison appears here.</div></div>
+    </div>
+
+    <!-- History -->
+    <div class="pane hidden" id="pane-history">
+      <h1 class="hero">Past reports</h1>
+      <div id="historyList" class="card"></div>
+    </div>
+  </main>
+</section>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

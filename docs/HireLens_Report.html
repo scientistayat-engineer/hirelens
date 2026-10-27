@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HireLens: project report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{color-scheme:dark;--bg:#07060f;--panel:rgba(18,16,34,.78);--line:rgba(120,140,255,.22);--tx:#eceaff;--mu:#a5a2cf;--c1:#22d3ee;--c2:#8b5cf6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:radial-gradient(1100px 650px at 15% -10%,#1d1140,transparent),radial-gradient(900px 600px at 100% 100%,#06223a,transparent),var(--bg);color:var(--tx);font:16px/1.7 Inter,system-ui,sans-serif}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+#prog{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--c1),var(--c2));z-index:20}
+.layout{position:relative;z-index:1;display:grid;grid-template-columns:240px minmax(0,1fr);gap:40px;max-width:1120px;margin:0 auto;padding:0 24px}
+nav{position:sticky;top:0;align-self:start;height:100vh;padding:40px 0;overflow:auto}
+nav b{display:block;font:700 18px "Space Grotesk";margin-bottom:18px}
+nav a{display:block;color:var(--mu);text-decoration:none;font-size:14px;padding:6px 12px;border-left:2px solid var(--line);transition:.2s}
+nav a:hover{color:var(--tx)}
+nav a.on{color:var(--c1);border-color:var(--c1);background:rgba(34,211,238,.06)}
+nav a:focus-visible,button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+main{padding:40px 0 90px}
+.cover{min-height:78vh;display:flex;flex-direction:column;justify-content:center;padding-bottom:40px}
+.logo{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--c1),var(--c2));color:#06061a;font:700 22px "Space Grotesk";margin-bottom:22px}
+h1,h2,h3{font-family:"Space Grotesk",Inter,sans-serif;line-height:1.15}
+h1{font-size:clamp(38px,6vw,68px);margin:0 0 14px}
+.sub{font-size:20px;color:var(--mu);max-width:34ch;margin:0 0 30px}
+.meta{display:grid;gap:4px;color:var(--tx)}
+.meta span{color:var(--mu)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.chip{padding:5px 13px;border-radius:999px;border:1px solid rgba(34,211,238,.35);background:rgba(34,211,238,.08);color:var(--c1);font-size:13px;font-weight:600}
+section{margin-top:64px}
+h2{font-size:32px;margin:0 0 16px}
+h3{font-size:20px;margin:28px 0 8px;color:var(--c1)}
+p{max-width:70ch;color:#d7d5f2}
+ul,ol{max-width:70ch;color:#d7d5f2;padding-left:22px}
+li{margin:6px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px;backdrop-filter:blur(12px);box-shadow:0 0 40px rgba(34,211,238,.06)}
+.tw{overflow-x:auto;margin:16px 0}
+table{width:100%;border-collapse:collapse;min-width:520px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top;font-size:15px}
+th{font-family:"Space Grotesk";color:var(--c1);font-weight:700}
+td:first-child{color:var(--tx);font-weight:600}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}
+.fn{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;cursor:pointer;text-align:left;color:var(--tx);font:inherit;transition:.2s}
+.fn:hover,.fn.on{border-color:var(--c1);box-shadow:0 0 24px rgba(34,211,238,.25)}
+.fn i{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--c1),var(--c2));color:#06061a;font:700 14px "Space Grotesk";font-style:normal;margin-bottom:10px}
+.fn b{display:block;font:700 16px "Space Grotesk"}
+#fdetail{min-height:70px;margin-top:-4px}
+.out{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0}
+.out pre{margin:0;white-space:pre-wrap;font:14px/1.7 Inter;color:#d7d5f2}
+.out h4{margin:0 0 10px;font:700 15px "Space Grotesk";color:var(--c1)}
+footer{margin-top:70px;color:var(--mu);font-size:14px;border-top:1px solid var(--line);padding-top:20px}
+.pbtn{background:transparent;border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:9px 16px;font:600 14px Inter;cursor:pointer;margin-top:22px;align-self:flex-start}
+.pbtn:hover{border-color:var(--c1)}
+@media(max-width:900px){.layout{grid-template-columns:1fr;gap:0}nav{display:none}.flow{grid-template-columns:1fr 1fr}.out{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media print{:root{--tx:#111;--mu:#444;--c1:#0a6f86;--line:#c9c9d6}.chip{background:#e8f7fa;border-color:#7cc6d4}.logo{color:#fff}#bg,#prog,nav,.pbtn{display:none!important}body{background:#fff;color:#000}.layout{display:block}p,ul,ol,td,.out pre{color:#111}h3,th,.out h4{color:#0a5f73}.card,.fn{background:#fff;border-color:#bbb;box-shadow:none}.cover{min-height:auto}section{break-inside:avoid-page}}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<div id="prog"></div>
+<div class="layout">
+<nav id="toc" aria-label="Report sections">
+  <b>HireLens</b>
+  <a href="#abstract">Abstract</a><a href="#intro">1. Introduction</a><a href="#objectives">2. Objectives</a><a href="#design">3. System design</a><a href="#stack">4. Technology stack</a><a href="#impl">5. Implementation</a><a href="#frontend">6. Frontend</a><a href="#auth">7. Authentication</a><a href="#sample">8. Sample run</a><a href="#deploy">9. Deployment</a><a href="#challenges">10. Challenges</a><a href="#future">11. Future scope</a><a href="#conclusion">12. Conclusion</a>
+</nav>
+<main>
+<header class="cover">
+  <div class="logo">H</div>
+  <h1>HireLens</h1>
+  <p class="sub">AI Job Description Analyzer built with LangGraph</p>
+  <div class="meta"><div><span>Submitted by </span>Anushay Ayat</div><div><span>Program </span>Artificial Intelligence and Data Science, SMIT</div></div>
+  <div class="chips"><span class="chip">Python</span><span class="chip">LangGraph</span><span class="chip">Groq API</span><span class="chip">FastAPI</span><span class="chip">Pydantic</span><span class="chip">Firebase Auth</span><span class="chip">Vercel</span></div>
+  <button class="pbtn" onclick="print()">Save as PDF</button>
+</header>
+
+<section id="abstract">
+<h2>Abstract</h2>
+<p>HireLens is a web application that reads a job description and turns it into a structured hiring report. The backend uses a LangGraph workflow with four nodes: information extraction, job classification, skill analysis and hiring report generation. Each node calls a large language model through the Groq API and passes a shared state to the next node. The frontend is written in plain HTML, CSS and JavaScript in a dark futuristic style, with a login page powered by Firebase Authentication. Beyond the required report, the application offers resume matching, job comparison, a history of past reports and export to JSON and PDF. It is deployed on Vercel.</p>
+</section>
+
+<section id="intro">
+<h2>1. Introduction</h2>
+<p>Job descriptions are long and unstructured. A recruiter or a candidate must read the whole posting to find the job title, the experience required, the skills that matter and the type of employment, and important details are easy to miss.</p>
+<p>Large language models are good at reading unstructured text and returning structured answers. LangGraph lets a developer split one large AI task into small steps and connect them as a graph. HireLens combines both ideas: every step does one job, and the final output is a clean report.</p>
+<h3>Problem statement</h3>
+<p>Given a job description written as free text, produce a report with the job title, company, required experience, required skills, job category, employment type, technical skills, soft skills and the three most important skills. The system must handle postings of different styles and lengths, and must not crash on empty or meaningless input.</p>
+</section>
+
+<section id="objectives">
+<h2>2. Objectives</h2>
+<ul>
+<li>Build an AI assistant that converts a job description into a structured hiring report.</li>
+<li>Implement all four LangGraph nodes and pass state between them.</li>
+<li>Display the final report clearly, with extracted skills shown as tags.</li>
+<li>Handle empty or invalid input gracefully.</li>
+<li>Write clean, modular code.</li>
+<li>Add a web interface, JSON export, user login and deployment.</li>
+</ul>
+</section>
+
+<section id="design">
+<h2>3. System design</h2>
+<h3>Workflow</h3>
+<p>The workflow follows the assignment specification. Select a node to see what it does.</p>
+<div class="flow" id="flow">
+  <button class="fn on" data-d="Reads the job description and extracts the job title, company name, required experience and required skills. Missing values are returned as &quot;Not specified&quot;."><i>1</i><b>Information extraction</b></button>
+  <button class="fn" data-d="Assigns one job category (AI, Web Development, Data Science, Mobile, Cyber Security, DevOps, Cloud, Design, Marketing or Other) and an employment type such as Full-time, Part-time, Internship, Remote, Hybrid or On-site."><i>2</i><b>Job classification</b></button>
+  <button class="fn" data-d="Separates technical skills from soft skills and selects the three most important skills, each with a score from 0 to 100."><i>3</i><b>Skill analysis</b></button>
+  <button class="fn" data-d="Combines the results of nodes 1 to 3 and adds a short summary, a difficulty level and three interview questions for the recruiter."><i>4</i><b>Hiring report</b></button>
+</div>
+<div class="card" id="fdetail"></div>
+<p>All nodes read from and write to one shared state object. LangGraph merges the output of each node into that state, so later nodes can use the work of earlier ones.</p>
+
+<h3>Architecture</h3>
+<div class="tw"><table>
+<tr><th>Layer</th><th>Responsibility</th></tr>
+<tr><td>Browser</td><td>HTML, CSS and JavaScript interface, login page, report display and exports.</td></tr>
+<tr><td>FastAPI service</td><td>Endpoints /api/analyze, /api/match and /api/health, plus input validation.</td></tr>
+<tr><td>LangGraph pipeline</td><td>Runs the four nodes in order and carries the shared state.</td></tr>
+<tr><td>Groq LLM</td><td>Returns a JSON answer for each node.</td></tr>
+</table></div>
+
+<h3>Project structure</h3>
+<ul>
+<li><b>api/index.py</b>: schemas, the four nodes, the graph and the routes.</li>
+<li><b>public/</b>: index.html, style.css, app.js and firebase-config.js.</li>
+<li><b>vercel.json, requirements.txt, .env.example, README.md</b>: setup and deployment files.</li>
+</ul>
+</section>
+
+<section id="stack">
+<h2>4. Technology stack</h2>
+<div class="tw"><table>
+<tr><th>Technology</th><th>Purpose</th></tr>
+<tr><td>Python</td><td>Main backend language.</td></tr>
+<tr><td>LangGraph</td><td>Defines the four nodes and the order they run in.</td></tr>
+<tr><td>Groq API (Llama 3.3 70B)</td><td>Fast language model inference.</td></tr>
+<tr><td>FastAPI</td><td>REST API.</td></tr>
+<tr><td>Pydantic</td><td>Data models and validation of every node output.</td></tr>
+<tr><td>HTML, CSS, JavaScript</td><td>Frontend without a framework.</td></tr>
+<tr><td>Firebase Authentication</td><td>Email and Google sign-in.</td></tr>
+<tr><td>Vercel</td><td>Hosting of the frontend and the API.</td></tr>
+</table></div>
+</section>
+
+<section id="impl">
+<h2>5. Implementation</h2>
+<h3>State and nodes</h3>
+<p>A typed dictionary holds the state: the job description, the extracted information, the classification, the skill analysis and the final report. Each node is a small Python function that receives the state and returns only the keys it adds. This keeps every node easy to read, test and replace.</p>
+<h3>Structured output with Pydantic</h3>
+<p>Each node asks the model to reply in JSON only. The reply is parsed and validated with a Pydantic model, so the rest of the program works with predictable fields and default values instead of free text.</p>
+<h3>Input validation and errors</h3>
+<p>Before the graph runs, the API checks the input. Empty text returns a message asking the user to paste a job description. Text that is too short returns a message asking for more detail. Input is limited to 8,000 characters. If the model service fails, the API returns a clear error and the frontend shows it next to the input instead of crashing.</p>
+<h3>Resume matching</h3>
+<p>A separate endpoint compares a resume with the job description and returns a match score, matched skills, missing skills and one sentence of advice. It is kept outside the four-node workflow so the required pipeline stays exactly as specified.</p>
+</section>
+
+<section id="frontend">
+<h2>6. Frontend</h2>
+<p>The interface uses a dark futuristic style: a deep navy background, cyan and violet accents, glass-like panels and an animated particle network.</p>
+<div class="tw"><table>
+<tr><th>Screen</th><th>What it shows</th></tr>
+<tr><td>Login</td><td>A pulsing four-node pipeline that previews the workflow, next to the sign-in form.</td></tr>
+<tr><td>Analyze</td><td>Text area, run, sample and clear buttons, and four progress steps that follow the pipeline.</td></tr>
+<tr><td>Report</td><td>Title, company, experience, category, employment type, skill tags, top 3 skill bars, interview questions, JSON and PDF export.</td></tr>
+<tr><td>Resume match</td><td>Score ring with matched and missing skills.</td></tr>
+<tr><td>Compare</td><td>Two job descriptions side by side with shared and unique skills.</td></tr>
+<tr><td>History</td><td>The last 20 reports of the signed-in user.</td></tr>
+</table></div>
+<p>The layout is responsive, shows keyboard focus clearly and respects the reduced-motion setting of the user's device.</p>
+</section>
+
+<section id="auth">
+<h2>7. Authentication</h2>
+<p>Firebase Authentication provides email and password sign-up, sign-in with Google and sign-out. Firebase error codes are translated into plain messages such as "Email or password is wrong". A guest option lets people try the application without an account. History is stored separately for each user.</p>
+</section>
+
+<section id="sample">
+<h2>8. Sample run</h2>
+<div class="out">
+<div class="card"><h4>Input</h4><pre>We are hiring an AI Engineer at ABC Technologies (full-time, on-site). You have 2-4 years of experience with Python, FastAPI, LangGraph and SQL. Strong communication, teamwork and problem solving are a must.</pre></div>
+<div class="card"><h4>Hiring report</h4><pre>Job title: AI Engineer
+Company: ABC Technologies
+Experience: 2-4 years
+Category: Artificial Intelligence
+Employment: Full-time
+Technical: Python, FastAPI, LangGraph, SQL
+Soft: Communication, Teamwork, Problem solving
+Top 3: Python, LangGraph, FastAPI</pre></div>
+</div>
+<p>The result matches the example output in the assignment brief. The wording of the summary and the interview questions can vary slightly between runs because they are generated by the model.</p>
+</section>
+
+<section id="deploy">
+<h2>9. Deployment</h2>
+<ol>
+<li>Push the project to a GitHub repository.</li>
+<li>Import the repository into Vercel. It serves the public folder as the website and runs api/index.py as a Python function.</li>
+<li>Add GROQ_API_KEY in the Vercel environment variables so the key never appears in the code.</li>
+<li>Enable Email/Password and Google in Firebase Authentication, paste the web configuration into firebase-config.js and add the Vercel domain to the authorized domains.</li>
+</ol>
+</section>
+
+<section id="challenges">
+<h2>10. Challenges</h2>
+<ul>
+<li><b>Reliable structured output:</b> models sometimes add extra text. JSON mode and Pydantic validation solved this.</li>
+<li><b>State passing:</b> keeping each node focused while still using earlier results needed a clear state design.</li>
+<li><b>Bad input:</b> empty, very short or irrelevant text had to be rejected early with useful messages.</li>
+<li><b>Secrets:</b> the API key stays on the server and is never sent to the browser.</li>
+</ul>
+</section>
+
+<section id="future">
+<h2>11. Future scope</h2>
+<ul>
+<li>Upload job descriptions as PDF or DOCX files.</li>
+<li>Store history in Firestore so it follows the user across devices.</li>
+<li>Rank many resumes against one job.</li>
+<li>Add salary range and market demand insights.</li>
+<li>Support job descriptions in more languages.</li>
+</ul>
+</section>
+
+<section id="conclusion">
+<h2>12. Conclusion</h2>
+<p>HireLens meets the requirements of the assignment: four LangGraph nodes, state passed between them, a structured hiring report, graceful handling of invalid input and modular code. It goes further with a complete interface, login, resume matching, comparison, history and export, and it is ready to deploy on Vercel. The project shows that splitting an AI task into small graph nodes produces results that are easy to understand, test and extend.</p>
+<footer>References: LangGraph, Groq, FastAPI, Pydantic, Firebase Authentication and Vercel documentation.</footer>
+</section>
+</main>
+</div>
+
+<script>
+(function(){
+  var c=document.getElementById("bg"),x=c.getContext("2d"),w,h,pts;
+  function init(){w=c.width=innerWidth;h=c.height=innerHeight;pts=[];for(var i=0;i<Math.min(70,Math.floor(w/22));i++)pts.push({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3})}
+  function draw(){x.clearRect(0,0,w,h);for(var i=0;i<pts.length;i++){var p=pts[i];p.x=(p.x+p.vx+w)%w;p.y=(p.y+p.vy+h)%h;x.fillStyle="rgba(34,211,238,.7)";x.fillRect(p.x,p.y,2,2);for(var j=i+1;j<pts.length;j++){var d=Math.hypot(p.x-pts[j].x,p.y-pts[j].y);if(d<120){x.strokeStyle="rgba(139,92,246,"+(.22*(1-d/120))+")";x.beginPath();x.moveTo(p.x,p.y);x.lineTo(pts[j].x,pts[j].y);x.stroke()}}}requestAnimationFrame(draw)}
+  addEventListener("resize",init);init();
+  if(!matchMedia("(prefers-reduced-motion: reduce)").matches)draw();
+  var bar=document.getElementById("prog");
+  addEventListener("scroll",function(){var d=document.documentElement;bar.style.width=(scrollY/(d.scrollHeight-innerHeight||1)*100)+"%"},{passive:true});
+  var links=[].slice.call(document.querySelectorAll("#toc a")),secs=links.map(function(a){return document.querySelector(a.getAttribute("href"))});
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){l.classList.toggle("on",l.getAttribute("href")==="#"+e.target.id)})}})},{rootMargin:"-30% 0px -60% 0px"});
+  secs.forEach(function(s){io.observe(s)});
+  var fns=[].slice.call(document.querySelectorAll(".fn")),fd=document.getElementById("fdetail");
+  function pick(b){fns.forEach(function(n){n.classList.toggle("on",n===b)});fd.textContent=b.getAttribute("data-d")}
+  fns.forEach(function(b){b.addEventListener("click",function(){pick(b)})});pick(fns[0]);
+})();
+</script>
+</body>
+</html>
